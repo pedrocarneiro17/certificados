@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Certificados A1</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.07);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-icon {
+      font-size: 2.6rem;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .logo h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .logo p {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.93rem;
+      color: #0f172a;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      background: #fff;
+    }
+
+    input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 11px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background .15s;
+    }
+
+    .btn:hover { background: #2563eb; }
+    .btn:disabled { background: #93c5fd; cursor: default; }
+
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.84rem;
+      margin-top: 14px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <span class="logo-icon">🛡️</span>
+      <h1>Certificados A1</h1>
+      <p>Acesse com suas credenciais</p>
+    </div>
+
+    <div class="field">
+      <label for="username">Usuário</label>
+      <input type="text" id="username" placeholder="Digite o usuário" autocomplete="username" />
+    </div>
+
+    <div class="field">
+      <label for="password">Senha</label>
+      <input type="password" id="password" placeholder="Digite a senha" autocomplete="current-password" />
+    </div>
+
+    <button class="btn" id="btnLogin">Entrar</button>
+    <div class="error" id="error"></div>
+  </div>
+
+  <script>
+    const btnLogin = document.getElementById('btnLogin');
+    const errorEl  = document.getElementById('error');
+
+    async function doLogin() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      if (!username || !password) return;
+
+      btnLogin.disabled = true;
+      btnLogin.textContent = 'Entrando…';
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          location.href = '/';
+        } else {
+          errorEl.textContent = data.error || 'Erro ao autenticar.';
+          errorEl.style.display = 'block';
+        }
+      } catch {
+        errorEl.textContent = 'Erro de conexão.';
+        errorEl.style.display = 'block';
+      } finally {
+        btnLogin.disabled = false;
+        btnLogin.textContent = 'Entrar';
+      }
+    }
+
+    btnLogin.addEventListener('click', doLogin);
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('username').focus();
+  </script>
+</body>
+</html>

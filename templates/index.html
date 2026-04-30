@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificados A1</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #f1f5f9;
+      --surface:     #ffffff;
+      --surface2:    #f8fafc;
+      --border:      #e2e8f0;
+      --text:        #0f172a;
+      --muted:       #64748b;
+      --accent:      #3b82f6;
+      --accent-h:    #2563eb;
+      --ok:          #16a34a;
+      --ok-bg:       #f0fdf4;
+      --ok-border:   #bbf7d0;
+      --warn:        #d97706;
+      --warn-bg:     #fffbeb;
+      --warn-border: #fde68a;
+      --alert:       #ea580c;
+      --alert-bg:    #fff7ed;
+      --alert-border:#fed7aa;
+      --danger:      #dc2626;
+      --danger-bg:   #fef2f2;
+      --danger-border:#fecaca;
+      --radius:      10px;
+      --shadow:      0 1px 4px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    /* ── Nav ── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .nav-brand span { font-size: 1.4rem; }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .nav-user {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .btn-logout {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      border-radius: 7px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Layout ── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    section > h2 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── Stat cards ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-card.c-ok     .stat-value { color: var(--ok); }
+    .stat-card.c-warn   .stat-value { color: var(--warn); }
+    .stat-card.c-danger .stat-value { color: var(--danger); }
+    .stat-card.c-blue   .stat-value { color: var(--accent); }
+
+    /* ── Alert panels ── */
+    .alert-panels {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .alert-panel {
+      border-radius: var(--radius);
+      border: 1px solid;
+      overflow: hidden;
+    }
+
+    .alert-panel.p-15 { background: var(--danger-bg); border-color: var(--danger-border); }
+    .alert-panel.p-30 { background: var(--alert-bg);  border-color: var(--alert-border); }
+    .alert-panel.p-45 { background: var(--warn-bg);   border-color: var(--warn-border); }
+
+    .alert-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .alert-header-left { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.88rem; }
+
+    .alert-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .p-15 .alert-count { background: var(--danger); color: #fff; }
+    .p-30 .alert-count { background: var(--alert);  color: #fff; }
+    .p-45 .alert-count { background: var(--warn);   color: #fff; }
+
+    .p-15 .alert-header-left { color: var(--danger); }
+    .p-30 .alert-header-left { color: var(--alert); }
+    .p-45 .alert-header-left { color: var(--warn); }
+
+    .alert-toggle { font-size: 0.7rem; color: var(--muted); transition: transform .2s; }
+    .alert-panel.open .alert-toggle { transform: rotate(180deg); }
+
+    .alert-body {
+      display: none;
+      padding: 0 16px 14px;
+      border-top: 1px solid rgba(0,0,0,.06);
+    }
+
+    .alert-panel.open .alert-body { display: block; }
+
+    .alert-list { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; }
+
+    .alert-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,.7);
+      border-radius: 7px;
+      padding: 8px 12px;
+      font-size: 0.83rem;
+    }
+
+    .alert-item-name { font-weight: 600; }
+    .alert-item-file { font-size: 0.75rem; color: var(--muted); }
+    .alert-item-days { font-weight: 700; font-size: 0.82rem; white-space: nowrap; }
+
+    .alert-empty { font-size: 0.82rem; color: var(--muted); padding-top: 10px; }
+
+    /* ── Upload ── */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: border-color .2s, background .2s;
+      box-shadow: var(--shadow);
+    }
+
+    .dropzone.dragover { border-color: var(--accent); background: #eff6ff; }
+
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dz-icon { font-size: 2rem; margin-bottom: 10px; }
+
+    .dropzone h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+
+    .dropzone p { font-size: 0.8rem; color: var(--muted); }
+
+    .dz-btn {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 8px 20px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 7px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    /* Upload progress */
+    .upload-status {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .upload-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.83rem;
+    }
+
+    .upload-item-icon { font-size: 1rem; flex-shrink: 0; }
+    .upload-item-name { flex: 1; color: var(--text); }
+    .upload-item-result { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── Filters ── */
+    .filters-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+      box-shadow: var(--shadow);
+    }
+
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+
+    .filter-group label { font-size: 0.73rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+
+    .filter-input {
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 0.85rem;
+      color: var(--text);
+      background: var(--surface2);
+      outline: none;
+      transition: border-color .2s;
+      height: 34px;
+    }
+
+    .filter-input:focus { border-color: var(--accent); }
+
+    .filter-input[type="date"] { min-width: 140px; }
+
+    #searchInput { min-width: 200px; }
+
+    .quick-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .qbtn {
+      padding: 6px 13px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      height: 34px;
+    }
+
+    .qbtn:hover { border-color: var(--accent); color: var(--accent); }
+    .qbtn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .qbtn.q-15.active  { background: var(--danger); border-color: var(--danger); }
+    .qbtn.q-30.active  { background: var(--alert);  border-color: var(--alert); }
+    .qbtn.q-45.active  { background: var(--warn);   border-color: var(--warn); }
+    .qbtn.q-exp.active { background: #6b7280;        border-color: #6b7280; }
+
+    .filter-sep { width: 1px; background: var(--border); align-self: stretch; margin: 0 4px; }
+
+    .btn-apply {
+      padding: 7px 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      cursor: pointer;
+      height: 34px;
+      transition: background .15s;
+      align-self: flex-end;
+    }
+
+    .btn-apply:hover { background: var(--accent-h); }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-header h3 { font-size: 0.88rem; font-weight: 700; }
+
+    .table-count { font-size: 0.78rem; color: var(--muted); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--muted);
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { color: var(--text); }
+    thead th.sorted { color: var(--accent); }
+    thead th .sort-arrow { margin-left: 4px; font-size: 0.65rem; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+
+    td {
+      padding: 12px 16px;
+      font-size: 0.84rem;
+      vertical-align: middle;
+    }
+
+    .td-name { font-weight: 600; }
+    .td-org  { font-size: 0.78rem; color: var(--muted); }
+    .td-file { font-size: 0.75rem; color: var(--muted); font-family: monospace; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-ok     { background: var(--ok-bg);     color: var(--ok);     border: 1px solid var(--ok-border); }
+    .badge-warn   { background: var(--warn-bg);    color: var(--warn);   border: 1px solid var(--warn-border); }
+    .badge-alert  { background: var(--alert-bg);   color: var(--alert);  border: 1px solid var(--alert-border); }
+    .badge-danger { background: var(--danger-bg);  color: var(--danger); border: 1px solid var(--danger-border); }
+    .badge-gray   { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+    .actions { display: flex; gap: 6px; }
+
+    .btn-dl, .btn-del {
+      padding: 5px 11px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all .15s;
+    }
+
+    .btn-dl  { background: #eff6ff; border-color: #bfdbfe; color: var(--accent); }
+    .btn-dl:hover  { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-del { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+    .btn-del:hover { background: var(--danger); color: #fff; }
+
+    .empty-state {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .empty-state .empty-icon { font-size: 2rem; margin-bottom: 10px; }
+
+    /* ── Progress bar inside dias cell ── */
+    .dias-wrap { display: flex; flex-direction: column; gap: 3px; }
+    .dias-val  { font-weight: 600; font-size: 0.83rem; }
+    .prog { height: 3px; background: var(--border); border-radius: 3px; width: 70px; }
+    .prog-fill { height: 100%; border-radius: 3px; }
+    .prog-ok     { background: var(--ok); }
+    .prog-warn   { background: var(--warn); }
+    .prog-alert  { background: var(--alert); }
+    .prog-danger { background: var(--danger); }
+
+    /* ── Password modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 30px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    }
+
+    .modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; font-family: monospace; word-break: break-all; }
+
+    .modal label { font-size: 0.78rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px; }
+
+    .modal input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.93rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .modal input:focus { border-color: var(--accent); }
+
+    .modal-err { font-size: 0.78rem; color: var(--danger); margin-top: 6px; min-height: 16px; }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+    .btn-confirm {
+      padding: 9px 20px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    .btn-confirm:hover { background: var(--accent-h); }
+
+    .btn-skip {
+      padding: 9px 20px;
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+
+    .btn-skip:hover { border-color: var(--danger); color: var(--danger); }
+
+    @media (max-width: 640px) {
+      .filters-bar { flex-direction: column; align-items: stretch; }
+      .filter-sep  { display: none; }
+      #searchInput { min-width: unset; }
+      td:nth-child(3), th:nth-child(3) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-brand">
+    <span>🛡️</span> Certificados A1
+  </div>
+  <div class="nav-right">
+    <span class="nav-user">👤 {{ login_user }}</span>
+    <button class="btn-logout" onclick="doLogout()">Sair</button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- Dashboard -->
+  <section>
+    <h2>Visão geral</h2>
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-card c-blue">
+        <div class="stat-label">Total</div>
+        <div class="stat-value" id="sTotal">—</div>
+      </div>
+      <div class="stat-card c-ok">
+        <div class="stat-label">Válidos</div>
+        <div class="stat-value" id="sValid">—</div>
+      </div>
+      <div class="stat-card c-warn">
+        <div class="stat-label">Vencendo em 45 dias</div>
+        <div class="stat-value" id="sWarn">—</div>
+      </div>
+      <div class="stat-card c-danger">
+        <div class="stat-label">Vencidos</div>
+        <div class="stat-value" id="sExpired">—</div>
+      </div>
+    </div>
+
+    <!-- Alert panels -->
+    <div class="alert-panels" id="alertPanels" style="margin-top:14px"></div>
+  </section>
+
+  <!-- Upload -->
+  <section>
+    <h2>Adicionar certificados</h2>
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept=".pfx,.p12" multiple />
+      <div class="dz-icon">📂</div>
+      <h3>Arraste os certificados aqui</h3>
+      <p>Formatos aceitos: .pfx e .p12 — a senha padrão é testada automaticamente</p>
+      <div class="dz-btn">Selecionar arquivos</div>
+    </div>
+    <div class="upload-status" id="uploadStatus"></div>
+  </section>
+
+  <!-- Filters -->
+  <section>
+    <h2>Certificados</h2>
+    <div class="filters-bar">
+      <div class="filter-group">
+        <label>Buscar</label>
+        <input type="text" id="searchInput" class="filter-input" placeholder="Nome, organização ou arquivo…" />
+      </div>
+
+      <div class="filter-group">
+        <label>Vence a partir de</label>
+        <input type="date" id="dateFrom" class="filter-input" />
+      </div>
+
+      <div class="filter-group">
+        <label>Vence até</label>
+        <input type="date" id="dateTo" class="filter-input" />
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <div class="filter-group">
+        <label>Filtro rápido</label>
+        <div class="quick-filters">
+          <button class="qbtn active" data-q="" onclick="setQuick(this, '')">Todos</button>
+          <button class="qbtn q-45" data-q="45" onclick="setQuick(this, '45')">≤ 45 dias</button>
+          <button class="qbtn q-30" data-q="30" onclick="setQuick(this, '30')">≤ 30 dias</button>
+          <button class="qbtn q-15" data-q="15" onclick="setQuick(this, '15')">≤ 15 dias</button>
+          <button class="qbtn q-exp" data-q="expired" onclick="setQuick(this, 'expired')">Vencidos</button>
+        </div>
+      </div>
+
+      <button class="btn-apply" onclick="loadCerts()">Filtrar</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap" style="margin-top:12px">
+      <div class="table-header">
+        <h3>Lista de certificados</h3>
+        <span class="table-count" id="tableCount"></span>
+      </div>
+      <div id="tableBody"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Password Modal -->
+<div class="modal-overlay" id="passModal">
+  <div class="modal">
+    <h3>🔐 Senha necessária</h3>
+    <div class="modal-sub" id="modalFilename"></div>
+    <label for="modalPass">Senha do certificado</label>
+    <input type="password" id="modalPass" placeholder="Digite a senha…" autocomplete="off" />
+    <div class="modal-err" id="modalErr"></div>
+    <div class="modal-actions">
+      <button class="btn-skip"    id="btnSkip">Pular</button>
+      <button class="btn-confirm" id="btnConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ─────────────────────────────────────────────────────────────────
+  let currentQuick = '';
+  let sortCol = 'not_after';
+  let sortAsc = true;
+  let allCerts = [];
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    loadDashboard();
+    loadCerts();
+
+    // Search on Enter
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') loadCerts();
+    });
+  });
+
+  // ── Logout ────────────────────────────────────────────────────────────────
+  async function doLogout() {
+    await fetch('/logout', { method: 'POST' });
+    location.href = '/';
+  }
+
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+  async function loadDashboard() {
+    const res  = await fetch('/api/dashboard');
+    const data = await res.json();
+
+    document.getElementById('sTotal').textContent   = data.total;
+    document.getElementById('sValid').textContent   = data.valid;
+    document.getElementById('sWarn').textContent    = data.expiring_45.length;
+    document.getElementById('sExpired').textContent = data.expired;
+
+    const panels = [
+      { key: 'expiring_15', cls: 'p-15', label: '🔴 Crítico — vence em até 15 dias' },
+      { key: 'expiring_30', cls: 'p-30', label: '🟠 Atenção — vence em até 30 dias' },
+      { key: 'expiring_45', cls: 'p-45', label: '🟡 Aviso — vence em até 45 dias'   },
+    ];
+
+    document.getElementById('alertPanels').innerHTML = panels.map(p => {
+      const items = data[p.key];
+      const listHtml = items.length
+        ? items.map(c => `
+            <div class="alert-item">
+              <div>
+                <div class="alert-item-name">${esc(c.owner_name || '—')}</div>
+                <div class="alert-item-file">${esc(c.filename)}</div>
+              </div>
+              <div class="alert-item-days" style="color:${p.cls==='p-15'?'var(--danger)':p.cls==='p-30'?'var(--alert)':'var(--warn)'}">
+                ${c.dias_restantes === 0 ? 'Hoje!' : c.dias_restantes + 'd'}
+              </div>
+            </div>`).join('')
+        : `<div class="alert-empty">Nenhum certificado nesse prazo.</div>`;
+
+      return `
+        <div class="alert-panel ${p.cls}" id="panel-${p.cls}">
+          <div class="alert-header" onclick="togglePanel('panel-${p.cls}')">
+            <div class="alert-header-left">
+              <span class="alert-count">${items.length}</span>
+              ${p.label}
+            </div>
+            <span class="alert-toggle">▼</span>
+          </div>
+          <div class="alert-body">
+            <div class="alert-list">${listHtml}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Auto-open panels with items
+    panels.forEach(p => {
+      if (data[p.key].length > 0) {
+        document.getElementById(`panel-${p.cls}`)?.classList.add('open');
+      }
+    });
+  }
+
+  function togglePanel(id) {
+    document.getElementById(id)?.classList.toggle('open');
+  }
+
+  // ── Quick filter ──────────────────────────────────────────────────────────
+  function setQuick(btn, val) {
+    document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentQuick = val;
+    // Clear date inputs when using quick filters
+    if (val) {
+      document.getElementById('dateFrom').value = '';
+      document.getElementById('dateTo').value   = '';
+    }
+    loadCerts();
+  }
+
+  // ── Load certificates ─────────────────────────────────────────────────────
+  async function loadCerts() {
+    const search   = document.getElementById('searchInput').value.trim();
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo   = document.getElementById('dateTo').value;
+
+    const params = new URLSearchParams();
+    if (search)        params.set('search',    search);
+    if (currentQuick)  params.set('quick',     currentQuick);
+    if (!currentQuick && dateFrom) params.set('date_from', dateFrom);
+    if (!currentQuick && dateTo)   params.set('date_to',   dateTo);
+
+    const res  = await fetch('/api/certificates?' + params);
+    allCerts   = await res.json();
+    renderTable();
+  }
+
+  // ── Render table ──────────────────────────────────────────────────────────
+  function renderTable() {
+    const sorted = [...allCerts].sort((a, b) => {
+      let va = a[sortCol], vb = b[sortCol];
+      if (va == null) va = '';
+      if (vb == null) vb = '';
+      return sortAsc ? (va < vb ? -1 : va > vb ? 1 : 0)
+                     : (va > vb ? -1 : va < vb ? 1 : 0);
+    });
+
+    document.getElementById('tableCount').textContent =
+      sorted.length === 1 ? '1 certificado' : `${sorted.length} certificados`;
+
+    if (!sorted.length) {
+      document.getElementById('tableBody').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          Nenhum certificado encontrado.
+        </div>`;
+      return;
+    }
+
+    const cols = [
+      { key: 'owner_name',  label: 'Titular'      },
+      { key: 'not_before',  label: 'Emitido em'   },
+      { key: 'not_after',   label: 'Vence em'     },
+      { key: 'dias_restantes', label: 'Dias restantes' },
+      { key: '_status',     label: 'Status'       },
+      { key: '_actions',    label: 'Ações'        },
+    ];
+
+    const thead = `<thead><tr>${cols.map(c => {
+      if (c.key.startsWith('_')) return `<th>${c.label}</th>`;
+      const arrow = sortCol === c.key ? (sortAsc ? '▲' : '▼') : '';
+      const cls   = sortCol === c.key ? 'sorted' : '';
+      return `<th class="${cls}" onclick="setSort('${c.key}')">
+        ${c.label}<span class="sort-arrow">${arrow}</span>
+      </th>`;
+    }).join('')}</tr></thead>`;
+
+    const tbody = `<tbody>${sorted.map(c => {
+      const { badgeCls, badgeText, progCls } = classify(c.dias_restantes);
+      const diasHtml = c.dias_restantes != null ? `
+        <div class="dias-wrap">
+          <span class="dias-val">${c.dias_restantes < 0
+            ? `Vencido (${Math.abs(c.dias_restantes)}d)`
+            : c.dias_restantes === 0 ? 'Hoje!'
+            : c.dias_restantes + ' dias'}</span>
+          <div class="prog"><div class="prog-fill ${progCls}" style="width:${progPct(c)}%"></div></div>
+        </div>` : '—';
+
+      return `<tr>
+        <td>
+          <div class="td-name">${esc(c.owner_name || '—')}</div>
+          ${c.organization ? `<div class="td-org">${esc(c.organization)}</div>` : ''}
+          <div class="td-file">${esc(c.filename)}</div>
+        </td>
+        <td>${fmtDate(c.not_before)}</td>
+        <td>${fmtDate(c.not_after)}</td>
+        <td>${diasHtml}</td>
+        <td><span class="badge ${badgeCls}">${badgeText}</span></td>
+        <td>
+          <div class="actions">
+            <a class="btn-dl" href="/api/certificates/${c.id}/download">⬇ Baixar</a>
+            <button class="btn-del" onclick="deleteCert(${c.id}, '${esc(c.owner_name || c.filename)}')">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>`;
+
+    document.getElementById('tableBody').innerHTML =
+      `<table>${thead}${tbody}</table>`;
+  }
+
+  function setSort(col) {
+    if (sortCol === col) sortAsc = !sortAsc;
+    else { sortCol = col; sortAsc = true; }
+    renderTable();
+  }
+
+  function classify(dias) {
+    if (dias == null)  return { badgeCls: 'badge-gray',   badgeText: '—',          progCls: 'prog-ok' };
+    if (dias < 0)      return { badgeCls: 'badge-gray',   badgeText: 'Vencido',    progCls: 'prog-danger' };
+    if (dias === 0)    return { badgeCls: 'badge-danger', badgeText: '🚨 Hoje!',   progCls: 'prog-danger' };
+    if (dias <= 15)    return { badgeCls: 'badge-danger', badgeText: '🔴 Crítico', progCls: 'prog-danger' };
+    if (dias <= 30)    return { badgeCls: 'badge-alert',  badgeText: '🟠 Atenção', progCls: 'prog-alert'  };
+    if (dias <= 45)    return { badgeCls: 'badge-warn',   badgeText: '🟡 Aviso',   progCls: 'prog-warn'   };
+    return               { badgeCls: 'badge-ok',    badgeText: '✅ OK',      progCls: 'prog-ok'     };
+  }
+
+  function progPct(c) {
+    if (!c.not_before || !c.not_after) return 0;
+    const total = new Date(c.not_after) - new Date(c.not_before);
+    const used  = Date.now() - new Date(c.not_before);
+    return Math.min(100, Math.max(0, Math.round(used / total * 100)));
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  async function deleteCert(id, name) {
+    if (!confirm(`Remover o certificado de "${name}"?\n\nEsta ação não pode ser desfeita.`)) return;
+    await fetch(`/api/certificates/${id}`, { method: 'DELETE' });
+    loadDashboard();
+    loadCerts();
+  }
+
+  // ── Upload ────────────────────────────────────────────────────────────────
+  const dropzone  = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    handleFiles([...e.dataTransfer.files]);
+  });
+  fileInput.addEventListener('change', () => {
+    handleFiles([...fileInput.files]);
+    fileInput.value = '';
+  });
+
+  async function handleFiles(files) {
+    const valid = files.filter(f => /\.(pfx|p12)$/i.test(f.name));
+    if (!valid.length) return;
+
+    const statusEl = document.getElementById('uploadStatus');
+    statusEl.innerHTML = '';
+    statusEl.style.display = 'flex';
+
+    // Show pending items
+    valid.forEach(f => {
+      statusEl.insertAdjacentHTML('beforeend', `
+        <div class="upload-item" id="ui-${CSS.escape(f.name)}">
+          <span class="upload-item-icon">⏳</span>
+          <span class="upload-item-name">${esc(f.name)}</span>
+          <span class="upload-item-result">Enviando…</span>
+        </div>`);
+    });
+
+    // Upload all at once
+    const fd = new FormData();
+    valid.forEach(f => fd.append('files', f));
+
+    const res     = await fetch('/api/upload', { method: 'POST', body: fd });
+    const results = await res.json();
+
+    // Build queue of files that need password
+    const needsPass = [];
+
+    for (const r of results) {
+      if (r.needs_password) {
+        needsPass.push({ filename: r.filename, file: valid.find(f => f.name === r.filename) });
+      } else {
+        markItem(r.filename, r.success);
+      }
+    }
+
+    // Process password queue sequentially
+    for (const item of needsPass) {
+      const password = await askPassword(item.filename);
+      if (password === null) {
+        markItem(item.filename, false, 'Ignorado');
+        continue;
+      }
+      const fd2 = new FormData();
+      fd2.append('files', item.file);
+      fd2.append('password', password);
+      const r2 = await fetch('/api/upload', { method: 'POST', body: fd2 });
+      const [result] = await r2.json();
+      markItem(item.filename, result?.success, result?.needs_password ? 'Senha incorreta' : null);
+    }
+
+    loadDashboard();
+    loadCerts();
+  }
+
+  function markItem(filename, success, customMsg) {
+    const row = document.getElementById(`ui-${CSS.escape(filename)}`);
+    if (!row) return;
+    row.querySelector('.upload-item-icon').textContent   = success ? '✅' : '❌';
+    row.querySelector('.upload-item-result').textContent = success ? 'Adicionado'
+      : (customMsg || 'Erro ao processar');
+  }
+
+  // ── Password modal ────────────────────────────────────────────────────────
+  function askPassword(filename) {
+    return new Promise(resolve => {
+      const overlay = document.getElementById('passModal');
+      document.getElementById('modalFilename').textContent = filename;
+      document.getElementById('modalPass').value = '';
+      document.getElementById('modalErr').textContent = '';
+      overlay.classList.add('active');
+      document.getElementById('modalPass').focus();
+
+      const confirm = () => { off(); overlay.classList.remove('active'); resolve(document.getElementById('modalPass').value); };
+      const skip    = () => { off(); overlay.classList.remove('active'); resolve(null); };
+      const onKey   = e => { if (e.key === 'Enter') confirm(); };
+
+      document.getElementById('btnConfirm').addEventListener('click', confirm);
+      document.getElementById('btnSkip').addEventListener('click', skip);
+      document.getElementById('modalPass').addEventListener('keydown', onKey);
+
+      function off() {
+        document.getElementById('btnConfirm').removeEventListener('click', confirm);
+        document.getElementById('btnSkip').removeEventListener('click', skip);
+        document.getElementById('modalPass').removeEventListener('keydown', onKey);
+      }
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  function esc(s) {
+    return String(s ?? '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>

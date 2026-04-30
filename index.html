@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verificador de Certificados A1</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #4f6ef7;
+      --accent-hover: #6b85ff;
+      --text: #e8eaf6;
+      --text-muted: #8b90b0;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --expiring: #f97316;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-size: 0.9rem;
+    }
+
+    .shield {
+      font-size: 2.8rem;
+      margin-bottom: 10px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Drop zone */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: #1e2340;
+    }
+
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dropzone-icon { font-size: 2.4rem; margin-bottom: 12px; }
+
+    .dropzone h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .dropzone p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .dropzone .btn-browse {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 9px 22px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    /* Password modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .modal h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .modal .filename {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      word-break: break-all;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .modal input[type="password"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .modal input[type="password"]:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-error {
+      color: var(--danger);
+      font-size: 0.82rem;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-ghost { background: var(--surface2); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--border); }
+
+    /* Results */
+    .results { display: flex; flex-direction: column; gap: 14px; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .results-header h2 { font-size: 1rem; font-weight: 600; }
+
+    .btn-clear {
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-clear:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* Certificate card */
+    .cert-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0 20px;
+      align-items: start;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .cert-card.status-ok    { border-left: 4px solid var(--ok); }
+    .cert-card.status-warn  { border-left: 4px solid var(--expiring); }
+    .cert-card.status-alert { border-left: 4px solid var(--warn); }
+    .cert-card.status-error { border-left: 4px solid var(--danger); }
+
+    .cert-icon { font-size: 1.8rem; line-height: 1; padding-top: 2px; }
+
+    .cert-info { display: flex; flex-direction: column; gap: 4px; }
+
+    .cert-name {
+      font-size: 0.98rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .cert-org {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .cert-filename {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .cert-dates {
+      display: flex;
+      gap: 20px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .cert-date-item { display: flex; flex-direction: column; gap: 2px; }
+
+    .cert-date-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .cert-date-value { font-size: 0.9rem; font-weight: 500; }
+
+    .cert-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+      text-align: center;
+      align-self: center;
+    }
+
+    .badge-ok    { background: rgba(34,197,94,0.12);  color: var(--ok); }
+    .badge-warn  { background: rgba(249,115,22,0.12); color: var(--expiring); }
+    .badge-alert { background: rgba(245,158,11,0.12); color: var(--warn); }
+    .badge-error { background: rgba(239,68,68,0.12);  color: var(--danger); }
+
+    .cert-error-msg {
+      grid-column: 2 / 4;
+      font-size: 0.82rem;
+      color: var(--danger);
+      margin-top: 4px;
+    }
+
+    /* Summary bar */
+    .summary {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .summary-chip {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.84rem;
+    }
+
+    .summary-chip .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+
+    .dot-ok    { background: var(--ok); }
+    .dot-warn  { background: var(--expiring); }
+    .dot-alert { background: var(--warn); }
+    .dot-error { background: var(--danger); }
+
+    /* Progress */
+    .progress-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+
+    .fill-ok    { background: var(--ok); }
+    .fill-warn  { background: var(--expiring); }
+    .fill-alert { background: var(--warn); }
+    .fill-error { background: var(--danger); }
+
+    footer {
+      margin-top: 48px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    @media (max-width: 560px) {
+      .cert-card { grid-template-columns: auto 1fr; }
+      .cert-badge { grid-column: 2; justify-self: start; margin-top: 10px; }
+      .cert-dates { gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="shield">🛡️</div>
+  <h1>Verificador de Certificados A1</h1>
+  <p>Arraste os arquivos .pfx ou .p12 e veja a validade instantaneamente. Tudo processado localmente.</p>
+</header>
+
+<div class="container">
+
+  <!-- Drop zone -->
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept=".pfx,.p12" multiple />
+    <div class="dropzone-icon">📂</div>
+    <h2>Arraste os certificados aqui</h2>
+    <p>Formatos aceitos: .pfx e .p12</p>
+    <div class="btn-browse">Selecionar arquivos</div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary" id="summary" style="display:none"></div>
+
+  <!-- Results -->
+  <div id="resultsSection" style="display:none">
+    <div class="results-header">
+      <h2>Certificados verificados</h2>
+      <button class="btn-clear" id="btnClear">Limpar tudo</button>
+    </div>
+  </div>
+
+  <div class="results" id="results"></div>
+</div>
+
+<!-- Password modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>🔐 Certificado protegido por senha</h3>
+    <div class="filename" id="modalFilename"></div>
+    <label for="modalPassword">Senha do certificado</label>
+    <input type="password" id="modalPassword" placeholder="Digite a senha..." autocomplete="off" />
+    <div class="modal-error" id="modalError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnSkip">Pular</button>
+      <button class="btn btn-primary" id="btnConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Os certificados são processados inteiramente no seu navegador. Nenhum dado é enviado para servidores externos.
+</footer>
+
+<script>
+  const dropzone   = document.getElementById('dropzone');
+  const fileInput  = document.getElementById('fileInput');
+  const resultsEl  = document.getElementById('results');
+  const summaryEl  = document.getElementById('summary');
+  const sectionEl  = document.getElementById('resultsSection');
+  const overlay    = document.getElementById('modalOverlay');
+  const modalFile  = document.getElementById('modalFilename');
+  const modalPass  = document.getElementById('modalPassword');
+  const modalErr   = document.getElementById('modalError');
+  const btnConfirm = document.getElementById('btnConfirm');
+  const btnSkip    = document.getElementById('btnSkip');
+  const btnClear   = document.getElementById('btnClear');
+
+  let cards = [];
+
+  // ── Drag & drop ──────────────────────────────────────────────
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    handleFiles([...e.dataTransfer.files]);
+  });
+  fileInput.addEventListener('change', () => {
+    handleFiles([...fileInput.files]);
+    fileInput.value = '';
+  });
+
+  btnClear.addEventListener('click', () => {
+    cards = [];
+    resultsEl.innerHTML = '';
+    summaryEl.style.display = 'none';
+    sectionEl.style.display = 'none';
+    summaryEl.innerHTML = '';
+  });
+
+  // ── File queue processor ──────────────────────────────────────
+  async function handleFiles(files) {
+    const pfxFiles = files.filter(f => /\.(pfx|p12)$/i.test(f.name));
+    if (!pfxFiles.length) return;
+
+    sectionEl.style.display = 'block';
+
+    for (const file of pfxFiles) {
+      const buffer = await file.arrayBuffer();
+      const result = tryParse(buffer, '');
+
+      if (result.success) {
+        addCard(file.name, result);
+      } else {
+        const pass = await askPassword(file.name);
+        if (pass === null) {
+          addCard(file.name, { success: false, error: 'Ignorado pelo usuário.' });
+        } else {
+          const r2 = tryParse(buffer, pass);
+          addCard(file.name, r2.success ? r2 : { success: false, error: 'Senha incorreta ou arquivo corrompido.' });
+        }
+      }
+    }
+
+    renderSummary();
+  }
+
+  // ── PFX parsing ───────────────────────────────────────────────
+  function tryParse(buffer, password) {
+    try {
+      const bytes = new Uint8Array(buffer);
+      const raw = String.fromCharCode(...bytes);
+      const der = forge.util.createBuffer(raw);
+      const asn1 = forge.asn1.fromDer(der);
+      const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, password);
+      const bags = p12.getBags({ bagType: forge.pki.oids.certBag });
+      const certBags = bags[forge.pki.oids.certBag] || [];
+
+      // Seleciona o certificado folha (end-entity), não o da AC raiz/intermediária.
+      // CAs têm basicConstraints com cA:true — o certificado do titular não.
+      const isCA = c => {
+        const bc = c.getExtension('basicConstraints');
+        return bc && bc.cA === true;
+      };
+
+      const leafCerts = certBags.map(b => b.cert).filter(c => !isCA(c));
+      const pool = leafCerts.length > 0 ? leafCerts : certBags.map(b => b.cert);
+
+      // Entre os candidatos, pega o com menor período de validade (mais específico)
+      let cert = null;
+      for (const c of pool) {
+        const vida = c.validity.notAfter - c.validity.notBefore;
+        if (!cert || vida < (cert.validity.notAfter - cert.validity.notBefore)) cert = c;
+      }
+
+      if (!cert) return { success: false, error: 'Nenhum certificado encontrado no arquivo.' };
+
+      const getAttr = (oid) => {
+        try { return cert.subject.getField(oid)?.value || null; } catch { return null; }
+      };
+
+      return {
+        success: true,
+        nome: getAttr('CN') || 'Não identificado',
+        org: getAttr('O'),
+        notBefore: cert.validity.notBefore,
+        notAfter:  cert.validity.notAfter,
+      };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // ── Password modal ────────────────────────────────────────────
+  function askPassword(filename) {
+    return new Promise(resolve => {
+      modalFile.textContent = filename;
+      modalPass.value = '';
+      modalErr.textContent = '';
+      overlay.classList.add('active');
+      modalPass.focus();
+
+      const confirm = () => {
+        overlay.classList.remove('active');
+        off();
+        resolve(modalPass.value);
+      };
+      const skip = () => {
+        overlay.classList.remove('active');
+        off();
+        resolve(null);
+      };
+      const onKey = e => { if (e.key === 'Enter') confirm(); };
+
+      btnConfirm.addEventListener('click', confirm);
+      btnSkip.addEventListener('click', skip);
+      modalPass.addEventListener('keydown', onKey);
+
+      function off() {
+        btnConfirm.removeEventListener('click', confirm);
+        btnSkip.removeEventListener('click', skip);
+        modalPass.removeEventListener('keydown', onKey);
+      }
+    });
+  }
+
+  // ── Card rendering ────────────────────────────────────────────
+  function addCard(filename, result) {
+    const card = document.createElement('div');
+    card.className = 'cert-card';
+
+    if (!result.success) {
+      card.classList.add('status-error');
+      card.innerHTML = `
+        <div class="cert-icon">📄</div>
+        <div class="cert-info">
+          <div class="cert-name">${esc(filename)}</div>
+        </div>
+        <div class="cert-badge badge-error">Erro</div>
+        <div class="cert-error-msg">⚠️ ${esc(result.error)}</div>`;
+      cards.push({ status: 'error' });
+    } else {
+      const now = new Date();
+      const dias = Math.floor((result.notAfter - now) / 86400000);
+      const { label, badgeClass, cardClass, icon, progressClass } = classify(dias);
+      const totalDias = Math.floor((result.notAfter - result.notBefore) / 86400000);
+      const diasDecorridos = Math.floor((now - result.notBefore) / 86400000);
+      const pct = Math.min(100, Math.max(0, Math.round((diasDecorridos / totalDias) * 100)));
+
+      card.classList.add(cardClass);
+      card.innerHTML = `
+        <div class="cert-icon">${icon}</div>
+        <div class="cert-info">
+          <div class="cert-name">${esc(result.nome)}</div>
+          ${result.org ? `<div class="cert-org">${esc(result.org)}</div>` : ''}
+          <div class="cert-filename">${esc(filename)}</div>
+          <div class="cert-dates">
+            <div class="cert-date-item">
+              <span class="cert-date-label">Emitido em</span>
+              <span class="cert-date-value">${fmtDate(result.notBefore)}</span>
+            </div>
+            <div class="cert-date-item">
+              <span class="cert-date-label">Vence em</span>
+              <span class="cert-date-value">${fmtDate(result.notAfter)}</span>
+            </div>
+            <div class="cert-date-item">
+              <span class="cert-date-label">Tempo de vida usado</span>
+              <span class="cert-date-value">${pct}%</span>
+              <div class="progress-bar" style="width:80px">
+                <div class="progress-fill ${progressClass}" style="width:${pct}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cert-badge ${badgeClass}">${label}</div>`;
+
+      cards.push({ status: badgeClass.replace('badge-', '') });
+    }
+
+    resultsEl.appendChild(card);
+  }
+
+  function classify(dias) {
+    if (dias < 0)   return { label: `Vencido há ${Math.abs(dias)}d`,  badgeClass: 'badge-error', cardClass: 'status-error', icon: '❌', progressClass: 'fill-error' };
+    if (dias === 0) return { label: 'Vence hoje!',                     badgeClass: 'badge-error', cardClass: 'status-error', icon: '🚨', progressClass: 'fill-error' };
+    if (dias <= 30) return { label: `${dias} dias restantes`,          badgeClass: 'badge-warn',  cardClass: 'status-warn',  icon: '⚠️', progressClass: 'fill-warn' };
+    if (dias <= 90) return { label: `${dias} dias restantes`,          badgeClass: 'badge-alert', cardClass: 'status-alert', icon: '🟡', progressClass: 'fill-alert' };
+    return              { label: `${dias} dias restantes`,             badgeClass: 'badge-ok',   cardClass: 'status-ok',   icon: '✅', progressClass: 'fill-ok' };
+  }
+
+  // ── Summary chips ─────────────────────────────────────────────
+  function renderSummary() {
+    const counts = { ok: 0, alert: 0, warn: 0, error: 0 };
+    cards.forEach(c => { if (counts[c.status] !== undefined) counts[c.status]++; });
+
+    const items = [
+      { key: 'ok',    dot: 'dot-ok',    label: 'Válidos' },
+      { key: 'alert', dot: 'dot-alert', label: 'Próximos do vencimento (≤90d)' },
+      { key: 'warn',  dot: 'dot-warn',  label: 'Críticos (≤30d)' },
+      { key: 'error', dot: 'dot-error', label: 'Vencidos / Erro' },
+    ];
+
+    summaryEl.innerHTML = items
+      .filter(i => counts[i.key] > 0)
+      .map(i => `<div class="summary-chip"><span class="dot ${i.dot}"></span>${counts[i.key]} ${i.label}</div>`)
+      .join('');
+
+    summaryEl.style.display = summaryEl.innerHTML ? 'flex' : 'none';
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function fmtDate(d) {
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
