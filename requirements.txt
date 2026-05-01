@@ -4,3 +4,5 @@ cryptography>=42.0
 gunicorn>=21.2
 psycopg2-binary>=2.9
 python-dotenv>=1.0
+# psycopg2-binary é necessário apenas no Railway (PostgreSQL).
+# Localmente o SQLite é usado e essa dependência é ignorada.
