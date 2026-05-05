@@ -775,7 +775,7 @@
 
       <div class="stat-card">
         <div class="stat-card-top">
-          <span class="stat-card-label">Vencendo em 45 dias</span>
+          <span class="stat-card-label">Vencendo em 30 dias</span>
           <div class="stat-icon si-yellow">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -873,9 +873,9 @@
 
       <div class="qfilters">
         <button class="qbtn active" onclick="setQuick(this,'')">Todos</button>
-        <button class="qbtn q45" onclick="setQuick(this,'45')">≤ 45 dias</button>
-        <button class="qbtn q30" onclick="setQuick(this,'30')">≤ 30 dias</button>
-        <button class="qbtn q15" onclick="setQuick(this,'15')">≤ 15 dias</button>
+        <button class="qbtn q45" onclick="setQuick(this,'30')">≤ 30 dias</button>
+        <button class="qbtn q30" onclick="setQuick(this,'15')">≤ 15 dias</button>
+        <button class="qbtn q15" onclick="setQuick(this,'7')">≤ 7 dias</button>
         <button class="qbtn qexp" onclick="setQuick(this,'expired')">Vencidos</button>
       </div>
 
@@ -1006,13 +1006,13 @@
 
     document.getElementById('sTotal').textContent   = data.total;
     document.getElementById('sValid').textContent   = data.valid;
-    document.getElementById('sWarn').textContent    = data.expiring_45.length;
+    document.getElementById('sWarn').textContent    = data.expiring_30.length;
     document.getElementById('sExpired').textContent = data.expired;
 
     const panels = [
-      { key: 'expiring_15', strip: 'strip-danger',    cp: 'cp-danger',    label: 'Crítico — vencendo em até 15 dias',  db: 'db-danger' },
-      { key: 'expiring_30', strip: 'strip-severe',    cp: 'cp-severe',    label: 'Atenção — vencendo em até 30 dias',  db: 'db-severe' },
-      { key: 'expiring_45', strip: 'strip-attention', cp: 'cp-attention', label: 'Aviso — vencendo em até 45 dias',    db: 'db-attention' },
+      { key: 'expiring_7',  strip: 'strip-danger',    cp: 'cp-danger',    label: 'Crítico — vencendo em até 7 dias',   db: 'db-danger' },
+      { key: 'expiring_15', strip: 'strip-severe',    cp: 'cp-severe',    label: 'Atenção — vencendo em até 15 dias',  db: 'db-severe' },
+      { key: 'expiring_30', strip: 'strip-attention', cp: 'cp-attention', label: 'Aviso — vencendo em até 30 dias',    db: 'db-attention' },
     ];
 
     document.getElementById('alertPanels').innerHTML = panels.map(p => {

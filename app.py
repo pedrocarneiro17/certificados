@@ -334,9 +334,9 @@ def api_dashboard():
         "total":       Certificate.query.count(),
         "valid":       Certificate.query.filter(Certificate.not_after >= now).count(),
         "expired":     Certificate.query.filter(Certificate.not_after < now).count(),
-        "expiring_45": expiring(45),
         "expiring_30": expiring(30),
         "expiring_15": expiring(15),
+        "expiring_7":  expiring(7),
     })
 
 
@@ -362,7 +362,7 @@ def api_list():
 
     if quick == "expired":
         q = q.filter(Certificate.not_after < now)
-    elif quick in ("15", "30", "45"):
+    elif quick in ("7", "15", "30"):
         q = q.filter(Certificate.not_after.between(now, now + timedelta(days=int(quick))))
     else:
         if date_from:
