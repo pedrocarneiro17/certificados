@@ -88,6 +88,81 @@
 
     .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
 
+    .btn-notify {
+      padding: 6px 14px;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: var(--accent);
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-notify:hover    { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-notify:disabled { opacity: .6; cursor: default; }
+
+    /* ── Notify result panel ── */
+    .notify-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .notify-panel.visible { display: block; }
+
+    .notify-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .notify-panel-header h4 { font-size: 0.85rem; font-weight: 700; }
+
+    .notify-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 1rem; line-height: 1;
+    }
+
+    .notify-list { display: flex; flex-direction: column; }
+
+    .notify-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+
+    .notify-item:last-child { border-bottom: none; }
+    .notify-item-icon { font-size: 1rem; flex-shrink: 0; }
+    .notify-item-info { flex: 1; }
+    .notify-item-name { font-weight: 600; }
+    .notify-item-meta { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+    .notify-item-badge {
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .nb-ok  { background: var(--ok-bg);     color: var(--ok);     border: 1px solid var(--ok-border); }
+    .nb-err { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+
+    .notify-empty { padding: 20px 16px; text-align: center; color: var(--muted); font-size: 0.82rem; }
+
     /* ── Layout ── */
     main {
       max-width: 1100px;
@@ -566,6 +641,9 @@
   </div>
   <div class="nav-right">
     <span class="nav-user">👤 {{ login_user }}</span>
+    <button class="btn-notify" id="btnNotify" onclick="doNotify()">
+      🔔 Disparar notificações
+    </button>
     <button class="btn-logout" onclick="doLogout()">Sair</button>
   </div>
 </nav>
@@ -596,6 +674,15 @@
 
     <!-- Alert panels -->
     <div class="alert-panels" id="alertPanels" style="margin-top:14px"></div>
+
+    <!-- Notify result panel -->
+    <div class="notify-panel" id="notifyPanel" style="margin-top:14px">
+      <div class="notify-panel-header">
+        <h4>📬 Resultado das notificações</h4>
+        <button class="notify-close" onclick="document.getElementById('notifyPanel').classList.remove('visible')">✕</button>
+      </div>
+      <div class="notify-list" id="notifyList"></div>
+    </div>
   </section>
 
   <!-- Upload -->
@@ -690,6 +777,57 @@
       if (e.key === 'Enter') loadCerts();
     });
   });
+
+  // ── Notify ────────────────────────────────────────────────────────────────
+  async function doNotify() {
+    const btn = document.getElementById('btnNotify');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Enviando…';
+
+    try {
+      const res  = await fetch('/api/notify', { method: 'POST' });
+      const data = await res.json();
+
+      if (data.error) {
+        renderNotifyResults([], data.error);
+      } else {
+        renderNotifyResults(data.results);
+      }
+    } catch {
+      renderNotifyResults([], 'Erro de conexão.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '🔔 Disparar notificações';
+    }
+  }
+
+  function renderNotifyResults(results, error) {
+    const panel = document.getElementById('notifyPanel');
+    const list  = document.getElementById('notifyList');
+    panel.classList.add('visible');
+
+    if (error) {
+      list.innerHTML = `<div class="notify-empty">⚠️ ${esc(error)}</div>`;
+      return;
+    }
+
+    if (!results.length) {
+      list.innerHTML = `<div class="notify-empty">✅ Nenhuma notificação nova para enviar.<br><small>Todos os certificados já foram notificados ou não há vencimentos nos próximos 30 dias.</small></div>`;
+      return;
+    }
+
+    const labelThreshold = { 7: '7 dias 🔴', 15: '15 dias 🟠', 30: '30 dias 🟡' };
+
+    list.innerHTML = results.map(r => `
+      <div class="notify-item">
+        <span class="notify-item-icon">${r.success ? '✅' : '❌'}</span>
+        <div class="notify-item-info">
+          <div class="notify-item-name">${esc(r.cert)}</div>
+          <div class="notify-item-meta">CNPJ: ${esc(r.cnpj || '—')} &nbsp;·&nbsp; Limiar: ${labelThreshold[r.threshold] || r.threshold + 'd'}${!r.success ? ` &nbsp;·&nbsp; ${esc(r.msg)}` : ''}</div>
+        </div>
+        <span class="notify-item-badge ${r.success ? 'nb-ok' : 'nb-err'}">${r.success ? 'Enviado' : 'Falhou'}</span>
+      </div>`).join('');
+  }
 
   // ── Logout ────────────────────────────────────────────────────────────────
   async function doLogout() {
