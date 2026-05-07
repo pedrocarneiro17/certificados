@@ -251,12 +251,14 @@ def _do_notify():
                 continue
 
             not_after = _aware(cert.not_after)
+            # CNPJ contém "/" no formato XX.XXX.XXX/XXXX-XX; CPF não
+            is_cnpj = "/" in cnpj
             payload = {
-                "action":           "insert_certificate_task",
-                "cnpj":             cnpj,
-                "client_name":      cert.owner_name,
+                "action":            "insert_certificate_task",
+                "cnpj" if is_cnpj else "cpf": cnpj,
+                "client_name":       cert.owner_name,
                 "days_until_expiry": threshold,
-                "expiry_date":      not_after.strftime("%d/%m/%Y") if not_after else None,
+                "expiry_date":       not_after.strftime("%d/%m/%Y") if not_after else None,
             }
 
             try:
