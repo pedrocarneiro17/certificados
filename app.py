@@ -212,14 +212,18 @@ def _row(c, now):
 
 # ── Notifications ─────────────────────────────────────────────────────────────
 
-THRESHOLDS = [30, 15, 7]
+# Buckets exclusivos (from_days exclusivo, to_days inclusivo) e label
+THRESHOLDS = [
+    (-1,  7,  7),   # 0–7 dias   → notificação "7"
+    ( 7, 15, 15),   # 8–15 dias  → notificação "15"
+    (15, 30, 30),   # 16–30 dias → notificação "30"
+]
 
 
 def _do_notify():
     """
-    Verifica certificados em cada limiar (30/15/7 dias) e envia para a API
-    externa apenas os que ainda não foram notificados.
-    Retorna lista de resultados.
+    Verifica certificados em cada bucket exclusivo e envia para a API
+    externa apenas os que ainda não foram notificados naquele bucket.
     """
     if not EXTERNAL_API_KEY:
         return [], "EXTERNAL_API_KEY não configurada."
@@ -227,9 +231,12 @@ def _do_notify():
     now     = datetime.now(timezone.utc)
     results = []
 
-    for threshold in THRESHOLDS:
+    for from_days, to_days, threshold in THRESHOLDS:
         expiring = (Certificate.query
-                    .filter(Certificate.not_after.between(now, now + timedelta(days=threshold)))
+                    .filter(
+                        Certificate.not_after >  now + timedelta(days=from_days),
+                        Certificate.not_after <= now + timedelta(days=to_days),
+                    )
                     .all())
 
         for cert in expiring:
@@ -329,20 +336,30 @@ def api_notify_log():
 def api_dashboard():
     now = datetime.now(timezone.utc)
 
-    def expiring(days):
+    def expiring_range(from_days, to_days):
+        """Intervalo exclusivo: (from_days, to_days] em dias."""
         rows = (Certificate.query
-                .filter(Certificate.not_after.between(now, now + timedelta(days=days)))
+                .filter(
+                    Certificate.not_after >  now + timedelta(days=from_days),
+                    Certificate.not_after <= now + timedelta(days=to_days),
+                )
                 .order_by(Certificate.not_after)
                 .all())
         return [_row(c, now) for c in rows]
+
+    # Buckets exclusivos: 0-7 | 8-15 | 16-30
+    e7  = expiring_range(-1, 7)   # inclui hoje (dias=0)
+    e15 = expiring_range(7,  15)
+    e30 = expiring_range(15, 30)
 
     return jsonify({
         "total":       Certificate.query.count(),
         "valid":       Certificate.query.filter(Certificate.not_after >= now).count(),
         "expired":     Certificate.query.filter(Certificate.not_after < now).count(),
-        "expiring_30": expiring(30),
-        "expiring_15": expiring(15),
-        "expiring_7":  expiring(7),
+        "expiring_30_count": len(e7) + len(e15) + len(e30),  # card resumo
+        "expiring_7":  e7,
+        "expiring_15": e15,
+        "expiring_30": e30,
     })
 
 
