@@ -77,14 +77,19 @@ class NotificationLog(db.Model):
 
 with app.app_context():
     db.create_all()
-    # Migração: adiciona coluna cnpj em bases antigas (SQLite e PostgreSQL)
-    for col, ddl in [("cnpj", "VARCHAR(20)")]:
+    with db.engine.connect() as conn:
+        # Adiciona coluna cnpj se não existir
         try:
-            with db.engine.connect() as conn:
-                conn.execute(db.text(f"ALTER TABLE certificates ADD COLUMN {col} {ddl}"))
-                conn.commit()
+            conn.execute(db.text("ALTER TABLE certificates ADD COLUMN cnpj VARCHAR(20)"))
+            conn.commit()
         except Exception:
-            pass  # coluna já existe
+            conn.rollback()
+        # Remove UniqueConstraint de notification_logs para permitir retentativa de falhas
+        try:
+            conn.execute(db.text("ALTER TABLE notification_logs DROP CONSTRAINT IF EXISTS uq_cert_threshold"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -282,13 +287,20 @@ def _do_notify():
                 success      = False
                 response_txt = str(e)
 
-            log = NotificationLog(
-                cert_id   = cert.id,
-                threshold = threshold,
-                success   = success,
-                response  = response_txt,
-            )
-            db.session.add(log)
+            # Atualiza registro existente (falha anterior) ou cria novo
+            log = NotificationLog.query.filter_by(
+                cert_id=cert.id, threshold=threshold
+            ).first()
+            if log:
+                log.sent_at  = datetime.now(timezone.utc)
+                log.success  = success
+                log.response = response_txt
+            else:
+                log = NotificationLog(
+                    cert_id=cert.id, threshold=threshold,
+                    success=success, response=response_txt,
+                )
+                db.session.add(log)
             db.session.commit()
 
             results.append({
