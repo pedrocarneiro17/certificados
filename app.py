@@ -127,17 +127,21 @@ def _cert_date(cert, which):
 
 def extract_cnpj(owner_name: str) -> str | None:
     """
-    Certificados ICP-Brasil PJ têm CN no formato 'RAZAO SOCIAL:12345678000195'.
-    Retorna CNPJ formatado ou None se não encontrar.
+    Certificados ICP-Brasil têm CN no formato 'NOME:DOCUMENTO'.
+    PJ → 14 dígitos (CNPJ)  ex: 12.345.678/0001-95
+    PF → 11 dígitos (CPF)   ex: 123.456.789-01
     """
     if not owner_name:
         return None
-    # Remove pontuação para facilitar a busca
     clean = re.sub(r"[.\-/]", "", owner_name)
-    match = re.search(r":(\d{14})", clean)
-    if match:
-        d = match.group(1)
+    match = re.search(r":(\d{11,14})", clean)
+    if not match:
+        return None
+    d = match.group(1)
+    if len(d) == 14:   # CNPJ
         return f"{d[:2]}.{d[2:5]}.{d[5:8]}/{d[8:12]}-{d[12:]}"
+    if len(d) == 11:   # CPF
+        return f"{d[:3]}.{d[3:6]}.{d[6:9]}-{d[9:]}"
     return None
 
 
