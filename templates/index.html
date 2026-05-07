@@ -571,6 +571,7 @@
     .td-org     { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
     .td-cnpj    { font-size: 0.72rem; color: var(--muted); font-family: 'SF Mono', 'Fira Code', monospace; margin-top: 1px; }
     .td-file    { font-size: 0.72rem; color: var(--muted); font-family: 'SF Mono', 'Fira Code', monospace; margin-top: 2px; }
+    .td-pass    { font-size: 0.72rem; color: #d97706; font-family: 'SF Mono', 'Fira Code', monospace; margin-top: 2px; }
     .td-date    { font-size: 0.8rem; color: var(--text-2); }
     .td-actions { display: flex; gap: 4px; }
 
@@ -1129,9 +1130,10 @@
       return `<tr>
         <td>
           <div class="td-name">${esc(c.owner_name || '—')}</div>
-          ${c.organization ? `<div class="td-org">${esc(c.organization)}</div>` : ''}
-          ${c.cnpj         ? `<div class="td-cnpj">${esc(c.cnpj)}</div>` : ''}
+          ${c.organization    ? `<div class="td-org">${esc(c.organization)}</div>` : ''}
+          ${c.cnpj            ? `<div class="td-cnpj">${esc(c.cnpj)}</div>` : ''}
           <div class="td-file">${esc(c.filename)}</div>
+          ${c.cert_password   ? `<div class="td-pass">🔑 ${esc(c.cert_password)}</div>` : ''}
         </td>
         <td class="td-date">${fmtDate(c.not_before)}</td>
         <td class="td-date">${fmtDate(c.not_after)}</td>

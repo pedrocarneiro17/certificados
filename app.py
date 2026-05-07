@@ -51,10 +51,11 @@ class Certificate(db.Model):
     filename     = db.Column(db.String(255), nullable=False)
     owner_name   = db.Column(db.String(500))
     organization = db.Column(db.String(500))
-    cnpj         = db.Column(db.String(20))          # extraído do CN, se PJ
-    not_before   = db.Column(db.DateTime(timezone=True))
-    not_after    = db.Column(db.DateTime(timezone=True))
-    file_data    = db.Column(db.LargeBinary, nullable=False)
+    cnpj          = db.Column(db.String(20))          # extraído do CN, se PJ
+    cert_password = db.Column(db.String(255))        # senha não-padrão, se houver
+    not_before    = db.Column(db.DateTime(timezone=True))
+    not_after     = db.Column(db.DateTime(timezone=True))
+    file_data     = db.Column(db.LargeBinary, nullable=False)
     uploaded_at  = db.Column(db.DateTime(timezone=True),
                              default=lambda: datetime.now(timezone.utc))
     notifications = db.relationship("NotificationLog", backref="certificate",
@@ -81,6 +82,12 @@ with app.app_context():
         # Adiciona coluna cnpj se não existir
         try:
             conn.execute(db.text("ALTER TABLE certificates ADD COLUMN cnpj VARCHAR(20)"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+        # Adiciona coluna cert_password se não existir
+        try:
+            conn.execute(db.text("ALTER TABLE certificates ADD COLUMN cert_password VARCHAR(255)"))
             conn.commit()
         except Exception:
             conn.rollback()
@@ -208,6 +215,7 @@ def _row(c, now):
         "owner_name":     c.owner_name,
         "organization":   c.organization,
         "cnpj":           c.cnpj,
+        "cert_password":  c.cert_password,
         "not_before":     _aware(c.not_before).isoformat() if c.not_before else None,
         "not_after":      not_after.isoformat()            if not_after   else None,
         "dias_restantes": dias,
@@ -429,24 +437,29 @@ def api_upload():
         filename = f.filename
         info     = None
 
+        used_pwd = None
         for pwd in filter(None, [DEFAULT_CERT_PASS, manual_pw, ""]):
             info, _ = parse_pfx(data, pwd)
             if info:
+                used_pwd = pwd
                 break
 
         if info is None:
             results.append({"filename": filename, "success": False, "needs_password": True})
             continue
 
+        non_default_pwd = used_pwd if used_pwd and used_pwd != DEFAULT_CERT_PASS else None
+
         now  = datetime.now(timezone.utc)
         cert = Certificate(
-            filename     = filename,
-            owner_name   = info["nome"],
-            organization = info["org"],
-            cnpj         = info["cnpj"],
-            not_before   = info["not_before"],
-            not_after    = info["not_after"],
-            file_data    = data,
+            filename      = filename,
+            owner_name    = info["nome"],
+            organization  = info["org"],
+            cnpj          = info["cnpj"],
+            cert_password = non_default_pwd,
+            not_before    = info["not_before"],
+            not_after     = info["not_after"],
+            file_data     = data,
         )
         db.session.add(cert)
         db.session.commit()
