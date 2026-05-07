@@ -71,8 +71,8 @@ class NotificationLog(db.Model):
                            default=lambda: datetime.now(timezone.utc))
     success    = db.Column(db.Boolean, default=True)
     response   = db.Column(db.Text)                  # resposta da API (debug)
-    __table_args__ = (db.UniqueConstraint("cert_id", "threshold",
-                                          name="uq_cert_threshold"),)
+    # Sem UniqueConstraint — controle de duplicatas feito por query (success=True)
+    pass
 
 
 with app.app_context():
@@ -240,9 +240,9 @@ def _do_notify():
                     .all())
 
         for cert in expiring:
-            # Já notificado para este limiar?
+            # Já notificado com SUCESSO para este limiar? Falhas são retentadas.
             already = NotificationLog.query.filter_by(
-                cert_id=cert.id, threshold=threshold
+                cert_id=cert.id, threshold=threshold, success=True
             ).first()
             if already:
                 continue
