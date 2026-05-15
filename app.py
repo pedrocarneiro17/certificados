@@ -76,6 +76,20 @@ class NotificationLog(db.Model):
     pass
 
 
+class ExpiredNotification(db.Model):
+    """Registro de certificado vencido que foi removido automaticamente."""
+    __tablename__ = "expired_notifications"
+    id           = db.Column(db.Integer, primary_key=True)
+    owner_name   = db.Column(db.String(500))
+    organization = db.Column(db.String(500))
+    cnpj         = db.Column(db.String(20))
+    filename     = db.Column(db.String(255))
+    expired_at   = db.Column(db.DateTime(timezone=True))   # not_after do cert
+    deleted_at   = db.Column(db.DateTime(timezone=True),
+                             default=lambda: datetime.now(timezone.utc))
+    dismissed    = db.Column(db.Boolean, default=False)
+
+
 with app.app_context():
     db.create_all()
     with db.engine.connect() as conn:
@@ -94,6 +108,24 @@ with app.app_context():
         # Remove UniqueConstraint de notification_logs para permitir retentativa de falhas
         try:
             conn.execute(db.text("ALTER TABLE notification_logs DROP CONSTRAINT IF EXISTS uq_cert_threshold"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+        # Cria tabela expired_notifications se não existir (db.create_all já garante,
+        # mas mantemos aqui por consistência com upgrades incrementais)
+        try:
+            conn.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS expired_notifications (
+                    id           SERIAL PRIMARY KEY,
+                    owner_name   VARCHAR(500),
+                    organization VARCHAR(500),
+                    cnpj         VARCHAR(20),
+                    filename     VARCHAR(255),
+                    expired_at   TIMESTAMPTZ,
+                    deleted_at   TIMESTAMPTZ DEFAULT NOW(),
+                    dismissed    BOOLEAN DEFAULT FALSE
+                )
+            """))
             conn.commit()
         except Exception:
             conn.rollback()
@@ -322,6 +354,72 @@ def _do_notify():
     return results, None
 
 
+def _cleanup_expired():
+    """
+    Remove certificados vencidos da base e cria um ExpiredNotification
+    para cada um, para que o usuário saiba que precisa informar o novo.
+    """
+    now     = datetime.now(timezone.utc)
+    expired = Certificate.query.filter(Certificate.not_after <= now).all()
+    removed = []
+
+    for cert in expired:
+        notif = ExpiredNotification(
+            owner_name   = cert.owner_name,
+            organization = cert.organization,
+            cnpj         = cert.cnpj,
+            filename     = cert.filename,
+            expired_at   = _aware(cert.not_after),
+        )
+        db.session.add(notif)
+        db.session.delete(cert)
+        removed.append(cert.owner_name or cert.filename)
+
+    if removed:
+        db.session.commit()
+        app.logger.info(f"[cleanup] {len(removed)} certificado(s) vencido(s) removido(s): {removed}")
+
+    return removed
+
+
+@app.route("/api/expired-notifications")
+@login_required
+def api_expired_notifications():
+    """Retorna notificações de certificados vencidos ainda não dispensadas."""
+    notifs = (ExpiredNotification.query
+              .filter_by(dismissed=False)
+              .order_by(ExpiredNotification.deleted_at.desc())
+              .all())
+    return jsonify([{
+        "id":           n.id,
+        "owner_name":   n.owner_name,
+        "organization": n.organization,
+        "cnpj":         n.cnpj,
+        "filename":     n.filename,
+        "expired_at":   n.expired_at.isoformat() if n.expired_at else None,
+        "deleted_at":   n.deleted_at.isoformat() if n.deleted_at else None,
+    } for n in notifs])
+
+
+@app.route("/api/expired-notifications/<int:nid>/dismiss", methods=["POST"])
+@login_required
+def api_dismiss_expired(nid):
+    """Dispensa (oculta) uma notificação de certificado vencido."""
+    notif = db.get_or_404(ExpiredNotification, nid)
+    notif.dismissed = True
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/expired-notifications/dismiss-all", methods=["POST"])
+@login_required
+def api_dismiss_all_expired():
+    """Dispensa todas as notificações de certificados vencidos."""
+    ExpiredNotification.query.filter_by(dismissed=False).update({"dismissed": True})
+    db.session.commit()
+    return jsonify({"success": True})
+
+
 @app.route("/api/notify", methods=["POST"])
 @login_required
 def api_notify():
@@ -491,6 +589,14 @@ def api_delete(cid):
 
 # ── Scheduler ────────────────────────────────────────────────────────────────
 
+def _scheduled_cleanup():
+    """Job diário: remove certificados vencidos e registra notificações."""
+    with app.app_context():
+        removed = _cleanup_expired()
+        if removed:
+            app.logger.info(f"[scheduler] cleanup removeu {len(removed)} vencido(s)")
+
+
 def _scheduled_notify():
     """Job diário: roda _do_notify() dentro do contexto do app."""
     with app.app_context():
@@ -509,7 +615,8 @@ _notify_hour = int(os.environ.get("NOTIFY_HOUR", "8"))
 #   - Em dev (flask run com reloader): só no processo filho (WERKZEUG_RUN_MAIN=true)
 if os.environ.get("WERKZEUG_RUN_MAIN", "true") == "true":
     _scheduler = BackgroundScheduler(timezone="America/Sao_Paulo")
-    _scheduler.add_job(_scheduled_notify, "cron", hour=_notify_hour, minute=0)
+    _scheduler.add_job(_scheduled_cleanup, "cron", hour=_notify_hour, minute=0)
+    _scheduler.add_job(_scheduled_notify,  "cron", hour=_notify_hour, minute=5)
     _scheduler.start()
     atexit.register(_scheduler.shutdown)
 
